@@ -11,7 +11,7 @@ and the Flutter guide for
 [developing packages and plugins](https://flutter.dev/developing-packages).
 -->
 
-This package was made to facilitate state manipulation. Basically, you just need to add the State Type to the context to manipulate it via the context itself.
+This package was made to facilitate State manipulation. Basically, you just need to add the State Type to the context to manipulate it via the context itself.
 
 ## Features
 
