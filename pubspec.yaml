@@ -1,13 +1,14 @@
 name: full_context
 description: "A new Flutter package project."
 version: 0.0.1
-homepage:
+homepage: https://github.com/LuDColl/full_context
 
 environment:
   sdk: '>=3.2.2 <4.0.0'
   flutter: ">=1.17.0"
 
 dependencies:
+  rxdart: ^0.27.7
   flutter:
     sdk: flutter
 
