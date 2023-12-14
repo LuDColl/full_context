@@ -1,10 +1,12 @@
-## 0.0.1
+## 0.2.1
 
-* Creates the core.
+* Export Init Widgets;
+* Invert Changelog.
 
-## 0.0.2
+## 0.2.0
 
-* Update description.
+* Add Init Widgets;
+* Export Events.
 
 ## 0.1.0
 
@@ -12,7 +14,10 @@
 * Change FCBuilder to FCBuildStream;
 * Add Events.
 
-## 0.2.0
+## 0.0.2
 
-* Add Init Widgets;
-* Export Events.
+* Update description.
+
+## 0.0.1
+
+* Creates the core.
