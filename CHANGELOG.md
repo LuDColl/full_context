@@ -1,3 +1,7 @@
+## 0.3.1
+
+* Add BuildContext in Map.
+
 ## 0.3.0
 
 * Modify FullContext:

@@ -34,7 +34,10 @@ class FCInherited extends InheritedWidget {
     controllers[S] = FCController<S>(state);
   }
 
-  StreamSubscription<S> map<S, T>(T Function(S state) mapper) {
+  StreamSubscription<S> map<S, T>(
+    BuildContext context,
+    T Function(BuildContext context, S state) mapper,
+  ) {
     _controllerValidate<S>(allControllers);
     _controllerValidate<T>(allControllers);
 
@@ -45,7 +48,7 @@ class FCInherited extends InheritedWidget {
 
     subscription = controller.stream.listen(
       (state) {
-        final newState = mapper(state);
+        final newState = mapper(context, state);
         toController.emit(newState);
       },
       onError: (Object error, [StackTrace? stackTrace]) {

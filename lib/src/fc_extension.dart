@@ -6,8 +6,8 @@ import 'package:rxdart/streams.dart';
 extension FCExtension on BuildContext {
   void init<S>() => FCInherited.of(this).init<S>();
   void set<S>(S state) => FCInherited.of(this).set<S>(state);
-  void map<S, T>(T Function(S state) mapper) {
-    FCInherited.of(this).map<S, T>(mapper);
+  void map<S, T>(T Function(BuildContext context, S state) mapper) {
+    FCInherited.of(this).map<S, T>(this, mapper);
   }
 
   void emit<S>(S state) => FCInherited.of(this).emit<S>(state);
