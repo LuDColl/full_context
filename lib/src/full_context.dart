@@ -4,9 +4,18 @@ import 'package:full_context/src/fc_inherited.dart';
 import 'package:full_context/src/fc_stateful.dart';
 
 class FullContext extends StatefulWidget {
-  const FullContext({super.key, required this.builder, required this.onInit});
-  final Widget Function(BuildContext context) builder;
-  final void Function(BuildContext context) onInit;
+  const FullContext({
+    super.key,
+    this.builder,
+    this.onInit,
+    this.afterInit,
+    this.child,
+  });
+
+  final Widget Function(BuildContext context)? builder;
+  final void Function(BuildContext context)? onInit;
+  final void Function(BuildContext context)? afterInit;
+  final Widget? child;
 
   @override
   State<FullContext> createState() => _FullContextState();
@@ -32,6 +41,8 @@ class _FullContextState extends State<FullContext> {
       child: FCStateful(
         builder: widget.builder,
         onInit: widget.onInit,
+        afterInit: widget.afterInit,
+        child: widget.child,
       ),
     );
   }

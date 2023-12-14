@@ -1,3 +1,10 @@
+## 0.3.0
+
+* Modify FullContext:
+  * Add After Init;
+  * Add Child.
+* Merge Widgets with InitWidgets.
+
 ## 0.2.1
 
 * Export Init Widgets;
