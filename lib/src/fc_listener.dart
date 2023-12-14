@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:full_context/full_context.dart';
 import 'package:full_context/src/events/fc_event.dart';
+import 'package:full_context/src/fc_extension.dart';
 
 class FCListener<S> extends StatefulWidget {
   const FCListener({super.key, required this.child, required this.listener});
