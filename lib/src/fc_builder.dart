@@ -39,8 +39,10 @@ class FCBuilder<S> extends StatelessWidget {
       );
     }
 
+    final valueStream = context.get$<S>();
     return StreamBuilder<S>(
-      stream: context.get$<S>(),
+      initialData: valueStream.valueOrNull,
+      stream: valueStream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           if (errorBuilder == null) throw const FCException('Unhandled error');

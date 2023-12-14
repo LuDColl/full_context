@@ -1,3 +1,7 @@
+## 0.4.1
+
+* Add initial state on Builder.
+
 ## 0.4.0
 
 * Add Errors Handlers in Builder, Listener and Consumer;
