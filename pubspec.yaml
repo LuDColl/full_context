@@ -1,6 +1,6 @@
 name: full_context
 description: "Intuitive state management via Context. With FullContext you still need Providers and Builders to instantiate and display states, but management can all be done through Context"
-version: 0.2.1
+version: 0.2.0
 homepage: https://github.com/LuDColl/full_context
 
 environment:

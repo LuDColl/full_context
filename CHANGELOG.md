@@ -12,7 +12,7 @@
 * Change FCBuilder to FCBuildStream;
 * Add Events.
 
-## 0.2.1
+## 0.2.0
 
 * Add Init Widgets;
 * Export Events.
