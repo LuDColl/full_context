@@ -7,14 +7,16 @@ class FCBuilder<S> extends StatelessWidget {
     required this.builder,
   });
 
-  final Widget Function(BuildContext context, S state) builder;
+  final Widget Function(
+    BuildContext context,
+    AsyncSnapshot<S> snapshot,
+  ) builder;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<S>(
-      initialData: context.get<S>(),
       stream: context.get$<S>(),
-      builder: (context, snapshot) => builder(context, snapshot.data as S),
+      builder: builder,
     );
   }
 }

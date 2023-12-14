@@ -5,3 +5,9 @@
 ## 0.0.2
 
 * Update description.
+
+## 0.1.0
+
+* Remove FCBuildStream;
+* Change FCBuilder to FCBuildStream;
+* Add Events.

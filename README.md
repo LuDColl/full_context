@@ -36,17 +36,26 @@ When you have a FullContext as a parent directly or indirectly with the Type you
 ```dart
 Widget build(BuildContext context) => InkWell(
     onTap: () => context.emit<int>(context.get<int>() + 1),
-    child: FCBuilder<int>((context, state) => Text(state)),
+    child: FCBuilder<int>((context, snapshot) =>
+        snapshot.hasData
+        ? Text(snapshot.data!)
+        : const CircularProgressIndicator(),
+    )
 );
 ```
 
-Besides `context.set()`, `context.emit()` and `context.get()`, we have:
+Besides `context.set<S>(state)`, `context.emit<S>(state)` and `context.get<S>()`, we have:
 
-- `context.get$<S>()` which returns Stream of Type S;
-- `context.map<S, N>(N Function(S) mapper)` creates a new Type N from Type S. You can just use `context.get()` and `context.get$()` from Type N;
-- `context.init<S>()` used in asynchronous calls together with `FCStreamBuilder`. As soon as your call returns, just send it with `contex.emit<S>()`. You cannot use `context.get()` until Type S is issued;
-- `context.emitError<S, E>(E error)` used with `FCStreamBuilder`;
-- `context.close<S>()` used to close stream of Type S.
+- `context.get$<S>()` which returns `ValueStream<S>`;
+- `context.init<S>()` starts type `S` without initial state. Remember that `context.get<S>()` only works after the first `context.emit<S>(state)`;
+- `context.map<S, T>(T Function(S state) mapper)` creates a map from type `S` to type `T`. Remember to start both `S` and `N` before creating the map;
+- `context.emitError<S, E>(E error, [StackTracer? stackTracer])` caught by `snapshot.error` of `FCBuilder<S>`. Maps also pass errors from `S` to `T`;
+- `context.close<S>()` Closes `S` streams and its maps.
+- `context.event$<S>()` which returns `Stream<FCEvent<S>>` with the possible inherited objects:
+    - `FCInitEvent<S>` emitted by `context.init<S>()`;
+    - `abstract FCStateEvent<S>`:
+        - `FCSetEvent<S>` emitted by `context.set<S>(state)`;
+        - `FCEmitEvent<S>` emmited by `context.emit<S>(state)`.
 
 
 ## Additional information
