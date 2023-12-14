@@ -1,22 +1,29 @@
 import 'package:flutter/widgets.dart';
+import 'package:full_context/src/fc_exception.dart';
 import 'package:full_context/src/fc_extension.dart';
 import 'package:full_context/src/full_context.dart';
 
 class FCBuilder<S> extends StatelessWidget {
   const FCBuilder({
     super.key,
-    required this.builder,
     this.onInit,
     this.afterInit,
+    this.errorBuilder,
+    this.nullBuilder,
+    required this.builder,
   });
-
-  final Widget Function(
-    BuildContext context,
-    AsyncSnapshot<S> snapshot,
-  ) builder;
 
   final void Function(BuildContext context)? onInit;
   final void Function(BuildContext context)? afterInit;
+
+  final Widget Function<E extends Object>(
+    BuildContext context,
+    E error, [
+    StackTrace? stackTrace,
+  ])? errorBuilder;
+
+  final Widget Function(BuildContext context)? nullBuilder;
+  final Widget Function(BuildContext context, S state) builder;
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +31,29 @@ class FCBuilder<S> extends StatelessWidget {
       return FullContext(
         onInit: onInit,
         afterInit: afterInit,
-        child: FCBuilder<S>(builder: builder),
+        child: FCBuilder<S>(
+          errorBuilder: errorBuilder,
+          nullBuilder: nullBuilder,
+          builder: builder,
+        ),
       );
     }
 
     return StreamBuilder<S>(
       stream: context.get$<S>(),
-      builder: builder,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          if (errorBuilder == null) throw const FCException('Unhandled error');
+          return errorBuilder!(context, snapshot.error!, snapshot.stackTrace);
+        }
+
+        if (!snapshot.hasData) {
+          if (nullBuilder == null) throw const FCException('Unhandled null');
+          return nullBuilder!(context);
+        }
+
+        return builder(context, snapshot.data as S);
+      },
     );
   }
 }

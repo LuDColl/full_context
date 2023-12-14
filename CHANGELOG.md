@@ -1,3 +1,8 @@
+## 0.4.0
+
+* Add Errors Handlers in Builder, Listener and Consumer;
+* Add Null Handlers in Builder and Consumer.
+
 ## 0.3.1
 
 * Add BuildContext in Map.

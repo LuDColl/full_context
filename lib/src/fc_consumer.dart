@@ -1,66 +1,50 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
 import 'package:full_context/src/events/fc_event.dart';
-import 'package:full_context/src/fc_extension.dart';
-import 'package:full_context/src/full_context.dart';
+import 'package:full_context/src/fc_builder.dart';
+import 'package:full_context/src/fc_listener.dart';
 
-class FCConsumer<S> extends StatefulWidget {
+class FCConsumer<S> extends StatelessWidget {
   const FCConsumer({
     super.key,
-    required this.listener,
-    required this.builder,
     this.onInit,
     this.afterInit,
+    required this.onEvent,
+    this.onError,
+    this.errorBuilder,
+    this.nullBuilder,
+    required this.builder,
   });
-
-  final void Function(BuildContext context, FCEvent<S> event) listener;
-  final Widget Function(
-    BuildContext context,
-    AsyncSnapshot<S> snapshot,
-  ) builder;
 
   final void Function(BuildContext context)? onInit;
   final void Function(BuildContext context)? afterInit;
+  final void Function(BuildContext context, FCEvent<S> event) onEvent;
+  final void Function<E extends Object>(
+    BuildContext context,
+    E error, [
+    StackTrace? stackTrace,
+  ])? onError;
 
-  @override
-  State<FCConsumer<S>> createState() => FCConsumerState<S>();
-}
+  final Widget Function<E extends Object>(
+    BuildContext context,
+    E error, [
+    StackTrace? stackTrace,
+  ])? errorBuilder;
 
-class FCConsumerState<S> extends State<FCConsumer<S>> {
-  late StreamSubscription<FCEvent<S>>? _subscription;
-  bool get _hasInit => widget.onInit != null || widget.afterInit != null;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!_hasInit) _subscription = context.event$<S>().listen(_onEvent);
-  }
-
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
+  final Widget Function(BuildContext context)? nullBuilder;
+  final Widget Function(BuildContext context, S snapshot) builder;
 
   @override
   Widget build(BuildContext context) {
-    if (_hasInit) {
-      return FullContext(
-        onInit: widget.onInit,
-        afterInit: widget.afterInit,
-        child: FCConsumer<S>(
-          listener: widget.listener,
-          builder: widget.builder,
-        ),
-      );
-    }
-
-    return StreamBuilder<S>(
-      stream: context.get$<S>(),
-      builder: widget.builder,
+    return FCListener(
+      onInit: onInit,
+      afterInit: afterInit,
+      onEvent: onEvent,
+      onError: onError,
+      child: FCBuilder(
+        errorBuilder: errorBuilder,
+        nullBuilder: nullBuilder,
+        builder: builder,
+      ),
     );
   }
-
-  void _onEvent(FCEvent<S> event) => widget.listener(context, event);
 }
