@@ -1,3 +1,7 @@
+## 0.4.2
+
+* Add seed state in Controller.
+
 ## 0.4.1
 
 * Add initial state on Builder.

@@ -10,20 +10,22 @@ import 'package:rxdart/subjects.dart';
 
 class FCController<S> {
   FCController([S? state]) {
+    if (state != null) {
+      _publishEvent.add(FCSetEvent<S>(state));
+      _subject = BehaviorSubject<S>.seeded(state);
+    } else {
+      _publishEvent.add(const FCInitEvent());
+      _subject = BehaviorSubject<S>();
+    }
+
     _subscription = _publishEvent.listen(
       _onEvent,
       onError: _onError,
       onDone: _onDone,
     );
-
-    if (state != null) {
-      _publishEvent.add(FCSetEvent<S>(state));
-    } else {
-      _publishEvent.add(const FCInitEvent());
-    }
   }
 
-  final _subject = BehaviorSubject<S>();
+  late BehaviorSubject<S> _subject;
   final _publishEvent = PublishSubject<FCEvent<S>>();
 
   late StreamSubscription<FCEvent<S>> _subscription;
