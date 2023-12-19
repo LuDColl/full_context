@@ -48,14 +48,8 @@ Besides `context.set<S>(state)`, `context.emit<S>(state)` and `context.get<S>()`
 
 - `context.get$<S>()` which returns `ValueStream<S>`;
 - `context.init<S>()` starts type `S` without initial state. Remember that `context.get<S>()` only works after the first `context.emit<S>(state)`;
-- `context.map<S, T>(T Function(S state) mapper)` creates a map from type `S` to type `T`. Remember to start both `S` and `N` before creating the map;
-- `context.emitError<S, E>(E error, [StackTracer? stackTracer])` caught by `snapshot.error` of `FCBuilder<S>`. Maps also pass errors from `S` to `T`;
-- `context.close<S>()` Closes `S` streams and its maps.
-- `context.event$<S>()` which returns `Stream<FCEvent<S>>` with the possible inherited objects:
-    - `FCInitEvent<S>` emitted by `context.init<S>()`;
-    - `abstract FCStateEvent<S>`:
-        - `FCSetEvent<S>` emitted by `context.set<S>(state)`;
-        - `FCEmitEvent<S>` emmited by `context.emit<S>(state)`.
+- `context.emitError<S, E>(E error, [StackTracer? stackTracer])`;
+- `context.close<S>()` Closes `S` stream.
 
 
 ## Additional information

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:full_context/src/fc_exception.dart';
+import 'package:full_context/src/fc_init.dart';
 
 class FCStateful extends StatefulWidget {
   const FCStateful({
@@ -11,8 +12,8 @@ class FCStateful extends StatefulWidget {
   });
 
   final Widget Function(BuildContext context)? builder;
-  final void Function(BuildContext context)? onInit;
-  final void Function(BuildContext context)? afterInit;
+  final FCInit? Function(BuildContext context)? onInit;
+  final FCInit? Function(BuildContext context)? afterInit;
   final Widget? child;
 
   @override
@@ -20,13 +21,29 @@ class FCStateful extends StatefulWidget {
 }
 
 class _FCStatefulState extends State<FCStateful> {
+  final _inits = <FCInit?>[];
+
   @override
   void initState() {
     super.initState();
-    widget.onInit?.call(context);
+    final init = widget.onInit?.call(context);
+    _inits.add(init);
+
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) => widget.afterInit?.call(context),
+      (_) {
+        final init = widget.afterInit?.call(context);
+        _inits.add(init);
+      },
     );
+  }
+
+  @override
+  void dispose() {
+    for (var init in _inits) {
+      init?.dispose();
+    }
+
+    super.dispose();
   }
 
   @override

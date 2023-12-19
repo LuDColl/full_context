@@ -1,6 +1,5 @@
 library full_context;
 
-export 'package:full_context/fc_events.dart';
 export 'package:full_context/src/fc_builder.dart';
 export 'package:full_context/src/fc_consumer.dart';
 export 'package:full_context/src/fc_exception.dart';

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:full_context/src/fc_exception.dart';
 import 'package:full_context/src/fc_extension.dart';
+import 'package:full_context/src/fc_init.dart';
 import 'package:full_context/src/full_context.dart';
 
 class FCBuilder<S> extends StatelessWidget {
@@ -13,8 +14,8 @@ class FCBuilder<S> extends StatelessWidget {
     required this.builder,
   });
 
-  final void Function(BuildContext context)? onInit;
-  final void Function(BuildContext context)? afterInit;
+  final FCInit? Function(BuildContext context)? onInit;
+  final FCInit? Function(BuildContext context)? afterInit;
 
   final Widget Function<E extends Object>(
     BuildContext context,

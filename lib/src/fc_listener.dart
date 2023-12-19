@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:full_context/src/events/fc_event.dart';
 import 'package:full_context/src/fc_exception.dart';
 import 'package:full_context/src/fc_extension.dart';
+import 'package:full_context/src/fc_init.dart';
 import 'package:full_context/src/full_context.dart';
 
 class FCListener<S> extends StatefulWidget {
@@ -11,15 +11,15 @@ class FCListener<S> extends StatefulWidget {
     super.key,
     this.onInit,
     this.afterInit,
-    required this.onEvent,
+    required this.onState,
     this.onError,
     required this.child,
   });
 
-  final void Function(BuildContext context)? onInit;
-  final void Function(BuildContext context)? afterInit;
+  final FCInit? Function(BuildContext context)? onInit;
+  final FCInit? Function(BuildContext context)? afterInit;
 
-  final void Function(BuildContext context, FCEvent<S> event) onEvent;
+  final void Function(BuildContext context, S state) onState;
   final void Function<E extends Object>(
     BuildContext context,
     E error, [
@@ -33,14 +33,14 @@ class FCListener<S> extends StatefulWidget {
 }
 
 class _FCListenerState<S> extends State<FCListener<S>> {
-  late StreamSubscription<FCEvent<S>>? _subscription;
+  late StreamSubscription<S>? _subscription;
   bool get _hasInit => widget.onInit != null || widget.afterInit != null;
 
   @override
   void initState() {
     super.initState();
     if (_hasInit) return;
-    _subscription = context.event$<S>().listen(_onEvent, onError: _onError);
+    _subscription = context.get$<S>().listen(_onState, onError: _onError);
   }
 
   @override
@@ -56,7 +56,7 @@ class _FCListenerState<S> extends State<FCListener<S>> {
         onInit: widget.onInit,
         afterInit: widget.afterInit,
         child: FCListener<S>(
-          onEvent: widget.onEvent,
+          onState: widget.onState,
           child: widget.child,
         ),
       );
@@ -65,7 +65,7 @@ class _FCListenerState<S> extends State<FCListener<S>> {
     return widget.child;
   }
 
-  void _onEvent(FCEvent<S> event) => widget.onEvent(context, event);
+  void _onState(S state) => widget.onState(context, state);
   void _onError<E extends Object>(E error, [StackTrace? stackTrace]) {
     final onError = widget.onError;
     if (onError == null) throw const FCException('Unhandled error');

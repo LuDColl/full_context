@@ -1,3 +1,9 @@
+## 0.5.0
+
+* Remove Events;
+* Remove Maps;
+* Add FCInit.
+
 ## 0.4.2
 
 * Add seed state in Controller.

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:full_context/src/fc_controller.dart';
 import 'package:full_context/src/fc_inherited.dart';
+import 'package:full_context/src/fc_init.dart';
 import 'package:full_context/src/fc_stateful.dart';
 
 class FullContext extends StatefulWidget {
@@ -13,8 +14,8 @@ class FullContext extends StatefulWidget {
   });
 
   final Widget Function(BuildContext context)? builder;
-  final void Function(BuildContext context)? onInit;
-  final void Function(BuildContext context)? afterInit;
+  final FCInit? Function(BuildContext context)? onInit;
+  final FCInit? Function(BuildContext context)? afterInit;
   final Widget? child;
 
   @override

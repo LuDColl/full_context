@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
-import 'package:full_context/src/events/fc_event.dart';
 import 'package:full_context/src/fc_builder.dart';
+import 'package:full_context/src/fc_init.dart';
 import 'package:full_context/src/fc_listener.dart';
 
 class FCConsumer<S> extends StatelessWidget {
@@ -8,16 +8,16 @@ class FCConsumer<S> extends StatelessWidget {
     super.key,
     this.onInit,
     this.afterInit,
-    required this.onEvent,
+    required this.onState,
     this.onError,
     this.errorBuilder,
     this.nullBuilder,
     required this.builder,
   });
 
-  final void Function(BuildContext context)? onInit;
-  final void Function(BuildContext context)? afterInit;
-  final void Function(BuildContext context, FCEvent<S> event) onEvent;
+  final FCInit? Function(BuildContext context)? onInit;
+  final FCInit? Function(BuildContext context)? afterInit;
+  final void Function(BuildContext context, S state) onState;
   final void Function<E extends Object>(
     BuildContext context,
     E error, [
@@ -38,7 +38,7 @@ class FCConsumer<S> extends StatelessWidget {
     return FCListener(
       onInit: onInit,
       afterInit: afterInit,
-      onEvent: onEvent,
+      onState: onState,
       onError: onError,
       child: FCBuilder(
         errorBuilder: errorBuilder,
