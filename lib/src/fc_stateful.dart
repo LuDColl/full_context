@@ -1,16 +1,17 @@
 import 'package:flutter/widgets.dart';
+import 'package:full_context/full_context.dart';
 import 'package:full_context/src/fc_inherited.dart';
 
-class FCStateful extends StatefulWidget {
+class FCStateful<T> extends StatefulWidget {
   const FCStateful({super.key, required this.builder});
 
-  final WidgetBuilder builder;
+  final Widget Function(BuildContext context, T value) builder;
 
   @override
-  State<FCStateful> createState() => _FCStatefulState();
+  State<FCStateful<T>> createState() => _FCStatefulState<T>();
 }
 
-class _FCStatefulState extends State<FCStateful> {
+class _FCStatefulState<T> extends State<FCStateful<T>> {
   late final FCInherited _fcInherited;
 
   @override
@@ -29,5 +30,12 @@ class _FCStatefulState extends State<FCStateful> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.builder(context);
+  Widget build(BuildContext context) {
+    if (T.toString() == 'Object?') return widget.builder(context, null as T);
+
+    return ValueListenableBuilder(
+      valueListenable: context.get$<T>(),
+      builder: (context, value, _) => widget.builder(context, value),
+    );
+  }
 }

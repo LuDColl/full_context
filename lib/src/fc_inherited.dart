@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 class FCInherited extends InheritedWidget {
@@ -56,18 +57,25 @@ class FCInherited extends InheritedWidget {
     return _get<T>(typeString);
   }
 
-  void dispose() {
-    for (final value in _values.values) {
-      value.dispose();
-    }
+  void emit<T>(T state) {
+    final typeString = T.toString();
+    final listenable = _get$<T>(typeString);
+    listenable.value = state;
+  }
 
-    _values.clear();
-    _factories.clear();
+  ValueListenable<T> get$<T>() {
+    final typeString = T.toString();
+    return _get$<T>(typeString);
   }
 
   T _get<T>(String typeString) {
+    final listenable = _get$<T>(typeString);
+    return listenable.value;
+  }
+
+  ValueNotifier<T> _get$<T>(String typeString) {
     final hasValue = allValues.containsKey(typeString);
-    if (hasValue) return allValues[typeString]!.value as T;
+    if (hasValue) return allValues[typeString]! as ValueNotifier<T>;
 
     final hasFactory = allFactories.containsKey(typeString);
     assert(hasFactory, 'No factory found for type $T');
@@ -78,8 +86,9 @@ class FCInherited extends InheritedWidget {
 
     if (runtimeTypeString.contains('()')) {
       final value = factory() as T;
-      _values[typeString] = ValueNotifier<T>(value);
-      return value;
+      final listenable = ValueNotifier<T>(value);
+      _values[typeString] = listenable;
+      return listenable;
     }
 
     final arguments = runtimeTypeString.split('=>').first.trim();
@@ -98,8 +107,18 @@ class FCInherited extends InheritedWidget {
         .toList();
 
     final value = Function.apply(factory, positionalArguments) as T;
-    _values[typeString] = ValueNotifier<T>(value);
-    return value;
+    final listenable = ValueNotifier<T>(value);
+    _values[typeString] = listenable;
+    return listenable;
+  }
+
+  void dispose() {
+    for (final value in _values.values) {
+      value.dispose();
+    }
+
+    _values.clear();
+    _factories.clear();
   }
 
   static FCInherited? maybeOf(BuildContext context) {

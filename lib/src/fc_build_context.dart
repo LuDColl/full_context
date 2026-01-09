@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:full_context/src/fc_inherited.dart';
 
@@ -11,6 +12,8 @@ extension FCBuildContext on BuildContext {
   // }
 
   S get<S>() => FCInherited.of(this).get<S>();
+  void emit<S>(S state) => FCInherited.of(this).emit<S>(state);
+  ValueListenable<S> get$<S>() => FCInherited.of(this).get$<S>();
   void add(Function factory) => FCInherited.of(this).add(factory);
 
   // ValueStream<S> get$<S>() => FCInherited.of(this).get$<S>();
