@@ -1,89 +1,88 @@
-import 'dart:async';
-
 import 'package:flutter/widgets.dart';
-import 'package:full_context/src/fc_controller.dart';
-import 'package:full_context/src/fc_exception.dart';
-import 'package:rxdart/streams.dart';
 
 class FCInherited extends InheritedWidget {
-  const FCInherited({
+  final Map<String, Function> _factories = {};
+  final Map<String, ValueNotifier<dynamic>> _values = {};
+
+  FCInherited({
     super.key,
     required super.child,
-    required this.controllers,
-    this.inheritedControllers,
-  });
-
-  final Map<Type, FCController> controllers;
-  final Map<Type, FCController>? inheritedControllers;
-
-  Map<Type, FCController> get allControllers {
-    return {
-      if (inheritedControllers != null) ...inheritedControllers!,
-      ...controllers,
-    };
-  }
-
-  void init<S>() {
-    _noControllerValidate<S>(controllers);
-    controllers[S] = FCController<S>();
-  }
-
-  void set<S>(S state) {
-    _noControllerValidate<S>(controllers);
-    controllers[S] = FCController<S>(state);
-  }
-
-  void emit<S>(S state) {
-    _controllerValidate<S>(allControllers);
-    final controller = allControllers[S] as FCController<S>;
-    controller.emit(state);
-  }
-
-  void emitError<S, E extends Object>(E error, [StackTrace? stackTrace]) {
-    _controllerValidate<S>(allControllers);
-    final subject = allControllers[S] as FCController<S>;
-    subject.emitError(error, stackTrace);
-  }
-
-  S get<S>() {
-    final state = get$<S>().valueOrNull;
-    if (state == null) throw throw FCException('$S not started');
-    return state;
-  }
-
-  ValueStream<S> get$<S>() {
-    _controllerValidate<S>(allControllers);
-    final controller = allControllers[S] as FCController<S>;
-    return controller.stream;
-  }
-
-  Future close<S>() {
-    _controllerValidate<S>(allControllers);
-    final controller = allControllers[S] as FCController<S>;
-    return controller.close();
-  }
-
-  @override
-  bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
-
-  static FCInherited? maybeOf(BuildContext context) {
-    return context.getInheritedWidgetOfExactType<FCInherited>();
-  }
-
-  static FCInherited of(BuildContext context) {
-    final fcInherited = maybeOf(context);
-    if (fcInherited == null) throw const FCException('Without full states');
-    return fcInherited;
-  }
-
-  static void _noControllerValidate<S>(Map<Type, FCController> controllers) {
-    if (controllers.containsKey(S) && !controllers[S]!.isClosed) {
-      throw FCException('$S not closed');
+    required List<Function> factories,
+  }) {
+    for (final factory in factories) {
+      add(factory);
     }
   }
 
-  static void _controllerValidate<S>(Map<Type, FCController> controllers) {
-    if (!controllers.containsKey(S)) throw FCException('$S not started');
-    if (controllers[S]!.isClosed) throw FCException('$S closed');
+  @override
+  bool updateShouldNotify(_) => false;
+
+  void add(Function factory) {
+    final runtimeType = factory.runtimeType;
+    final typeString = runtimeType.toString();
+
+    final hasReturn = typeString.contains('=>');
+    assert(hasReturn, 'Factory must have a return type');
+
+    final returnVoid = typeString.contains('=> void');
+    assert(!returnVoid, 'Factory must not return void');
+
+    final returnDynamic = typeString.contains('=> dynamic');
+    assert(!returnDynamic, 'Factory must not return dynamic');
+
+    final returnType = typeString.split('=>').last.trim();
+    _factories[returnType] = factory;
+  }
+
+  T get<T>() {
+    final typeString = T.toString();
+    return _get<T>(typeString);
+  }
+
+  T _get<T>(String typeString) {
+    final hasValue = _values.containsKey(typeString);
+    if (hasValue) return _values[typeString]!.value as T;
+
+    final hasFactory = _factories.containsKey(typeString);
+    assert(hasFactory, 'No factory found for type $T');
+
+    final factory = _factories[typeString]!;
+    final runtimeType = factory.runtimeType;
+    final runtimeTypeString = runtimeType.toString();
+
+    if (runtimeTypeString.contains('()')) {
+      final value = factory() as T;
+      _values[typeString] = ValueNotifier<T>(value);
+      return value;
+    }
+
+    final arguments = runtimeTypeString.split('=>').first.trim();
+
+    if (arguments.contains('})')) {
+      throw UnimplementedError(
+        'Factories with named parameters are not supported yet',
+      );
+    }
+
+    final positionalArguments = arguments
+        .replaceAll('(', '')
+        .replaceAll(')', '')
+        .split(',')
+        .map((typeString) => _get(typeString.trim()))
+        .toList();
+
+    final value = Function.apply(factory, positionalArguments) as T;
+    _values[typeString] = ValueNotifier<T>(value);
+    return value;
+  }
+
+  static FCInherited? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<FCInherited>();
+  }
+
+  static FCInherited of(BuildContext context) {
+    final FCInherited? result = maybeOf(context);
+    assert(result != null, 'No FCInherited found in context');
+    return result!;
   }
 }
