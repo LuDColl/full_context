@@ -1,18 +1,35 @@
 import 'package:flutter/widgets.dart';
 
 class FCInherited extends InheritedWidget {
-  final Map<String, Function> _factories = {};
-  final Map<String, ValueNotifier<dynamic>> _values = {};
-
   FCInherited({
     super.key,
     required super.child,
     required List<Function> factories,
+    required Map<String, Function> parentFactories,
+    required Map<String, ValueNotifier<dynamic>> parentValues,
   }) {
+    _parentValues = parentValues;
+    _parentFactories = parentFactories;
+
     for (final factory in factories) {
       add(factory);
     }
   }
+
+  final Map<String, Function> _factories = {};
+  late final Map<String, Function> _parentFactories;
+  final Map<String, ValueNotifier<dynamic>> _values = {};
+  late final Map<String, ValueNotifier<dynamic>> _parentValues;
+
+  Map<String, Function> get allFactories => {
+    ..._parentFactories,
+    ..._factories,
+  };
+
+  Map<String, ValueNotifier<dynamic>> get allValues => {
+    ..._parentValues,
+    ..._values,
+  };
 
   @override
   bool updateShouldNotify(_) => false;
@@ -39,14 +56,23 @@ class FCInherited extends InheritedWidget {
     return _get<T>(typeString);
   }
 
-  T _get<T>(String typeString) {
-    final hasValue = _values.containsKey(typeString);
-    if (hasValue) return _values[typeString]!.value as T;
+  void dispose() {
+    for (final value in _values.values) {
+      value.dispose();
+    }
 
-    final hasFactory = _factories.containsKey(typeString);
+    _values.clear();
+    _factories.clear();
+  }
+
+  T _get<T>(String typeString) {
+    final hasValue = allValues.containsKey(typeString);
+    if (hasValue) return allValues[typeString]!.value as T;
+
+    final hasFactory = allFactories.containsKey(typeString);
     assert(hasFactory, 'No factory found for type $T');
 
-    final factory = _factories[typeString]!;
+    final factory = allFactories[typeString]!;
     final runtimeType = factory.runtimeType;
     final runtimeTypeString = runtimeType.toString();
 
