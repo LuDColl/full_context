@@ -79,7 +79,7 @@ class FCFactoriesExample extends StatelessWidget {
 
 ### `listenables` and `context.emit()`
 
-Manipulate varriables and listen changes:
+Manipulate variables and listen for changes:
 
 ```dart
 import 'package:flutter/material.dart';
@@ -102,11 +102,11 @@ class FCListenablesExample extends StatelessWidget {
 }
 ```
 
-- If not use `listenables`, the `context.emit()` not listenable and the changes of `context.get()` not showed. 
+- If you do not use `listenables`, `context.emit()` will not be listenable and changes from `context.get()` will not be shown. 
 
 ### `async` with `loadingBuilder` and `errorBuilder`
 
-Provide `context` to `get()` and `emit()` only `Future` finalized:
+`context.get()` and `context.emit()` are only avaliable after the `Future` is completed:
 
 ```dart
 import 'package:flutter/material.dart';
@@ -137,9 +137,9 @@ class FCAsyncExample extends StatelessWidget {
 }
 ```
 
-* If not use `loadingBuilder` or `errorBuilder`, is used `SizedBox.shrink()` respectivement.
+* If you do not use `loadingBuilder` or `errorBuilder`, `SizedBox.shrink()` will be used respectively.
 
-## Addicional info
+## Additional info
 
 ### Inject Example
 
@@ -262,4 +262,4 @@ class FCInjectExample extends StatelessWidget {
 
 ## Creator Info
 
-Olá, me chamo Lucas e sou criador deste pacote. Sou brasileiro e pretendo melhorar continuamente este pacote.
+Hello, my name is Lucas and I am the creator of this package. I am Brazilian and I intend to continuously improve this package.
