@@ -1,4 +1,6 @@
 import 'package:flutter/widgets.dart';
+import 'package:full_context/src/fc_model.dart';
+import 'package:rxdart/rxdart.dart';
 
 class FCInherited extends InheritedWidget {
   FCInherited({
@@ -6,9 +8,9 @@ class FCInherited extends InheritedWidget {
     required super.child,
     required List<Function> factories,
     required Map<String, Function> parentFactories,
-    required Map<String, ValueNotifier<dynamic>> parentValues,
+    required Map<String, BehaviorSubject<FCModel>> parentSubjects,
   }) {
-    _parentValues = parentValues;
+    _parentSubjects = parentSubjects;
     _parentFactories = parentFactories;
 
     for (final factory in factories) {
@@ -17,10 +19,14 @@ class FCInherited extends InheritedWidget {
   }
 
   final Map<String, Function> _factories = {};
-  final Map<String, ValueNotifier> _values = {};
   late final Map<String, Function> _parentFactories;
-  late final Map<String, ValueNotifier> _parentValues;
-  Map<String, ValueNotifier> get allValues => {..._parentValues, ..._values};
+  final Map<String, BehaviorSubject<FCModel>> _subjects = {};
+  late final Map<String, BehaviorSubject<FCModel>> _parentSubjects;
+
+  Map<String, BehaviorSubject<FCModel>> get allValues => {
+    ..._parentSubjects,
+    ..._subjects,
+  };
 
   Map<String, Function> get allFactories => {
     ..._parentFactories,
@@ -54,36 +60,69 @@ class FCInherited extends InheritedWidget {
 
   void emit<T>(T state) {
     final typeString = T.toString();
-    final listenable = _get$<T>(typeString);
-    listenable.value = state;
+    final subject = _get$<T>(typeString);
+    subject.add(FCModel(value: state, loading: false));
   }
 
-  ValueNotifier get$<T>([Type? type]) {
+  Stream<T> get$<T>([Type? type]) {
     final typeString = type?.toString() ?? T.toString();
-    return _get$<T>(typeString);
+    final subject = _get$<T>(typeString);
+    return subject.map((event) => event.value as T);
   }
 
   T _get<T>(String typeString) {
-    final listenable = _get$<T>(typeString);
-    return listenable.value;
+    final subject = _get$<T>(typeString);
+    return subject.value.value as T;
   }
 
-  ValueNotifier _get$<T>(String typeString) {
+  void dispose() {
+    for (final value in _subjects.values) {
+      value.close();
+    }
+
+    _subjects.clear();
+    _factories.clear();
+  }
+
+  static FCInherited? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<FCInherited>();
+  }
+
+  static FCInherited of(BuildContext context) {
+    final FCInherited? result = maybeOf(context);
+    assert(result != null, 'No FCInherited found in context');
+    return result!;
+  }
+
+  BehaviorSubject<FCModel> _get$<T>(String typeString) {
     final hasValue = allValues.containsKey(typeString);
     if (hasValue) return allValues[typeString]!;
+
+    final futureTypeString = 'Future<$typeString>';
+    final hasFutureFactory = allFactories.containsKey(futureTypeString);
+
+    // if (hasFutureFactory) return _get$Async<T>(futureTypeString);
 
     final hasFactory = allFactories.containsKey(typeString);
     assert(hasFactory, 'No factory found for type $T');
 
+    return _get$Sync<T>(typeString);
+  }
+
+  BehaviorSubject<FCModel> _get$Sync<T>(String typeString) {
     final factory = allFactories[typeString]!;
     final runtimeType = factory.runtimeType;
     final runtimeTypeString = runtimeType.toString();
 
     if (runtimeTypeString.contains('()')) {
       final value = factory() as T;
-      final listenable = ValueNotifier<T>(value);
-      _values[typeString] = listenable;
-      return listenable;
+
+      final subject = BehaviorSubject<FCModel>.seeded(
+        FCModel(value: value, loading: false),
+      );
+
+      _subjects[typeString] = subject;
+      return subject;
     }
 
     final arguments = runtimeTypeString.split('=>').first.trim();
@@ -102,27 +141,12 @@ class FCInherited extends InheritedWidget {
         .toList();
 
     final value = Function.apply(factory, positionalArguments) as T;
-    final listenable = ValueNotifier<T>(value);
-    _values[typeString] = listenable;
-    return listenable;
-  }
 
-  void dispose() {
-    for (final value in _values.values) {
-      value.dispose();
-    }
+    final subject = BehaviorSubject<FCModel>.seeded(
+      FCModel(value: value, loading: false),
+    );
 
-    _values.clear();
-    _factories.clear();
-  }
-
-  static FCInherited? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<FCInherited>();
-  }
-
-  static FCInherited of(BuildContext context) {
-    final FCInherited? result = maybeOf(context);
-    assert(result != null, 'No FCInherited found in context');
-    return result!;
+    _subjects[typeString] = subject;
+    return subject;
   }
 }

@@ -17,7 +17,7 @@ class FullContext extends StatelessWidget {
   @override
   Widget build(BuildContext context) => FCInherited(
     factories: factories ?? [],
-    parentValues: FCInherited.maybeOf(context)?.allValues ?? {},
+    parentSubjects: FCInherited.maybeOf(context)?.allValues ?? {},
     parentFactories: FCInherited.maybeOf(context)?.allFactories ?? {},
     child: FCStateful(builder: builder, listenables: listenables),
   );

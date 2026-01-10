@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:full_context/full_context.dart';
 import 'package:full_context/src/fc_inherited.dart';
+import 'package:rxdart/rxdart.dart';
 
 class FCStateful extends StatefulWidget {
   const FCStateful({super.key, this.listenables, required this.builder});
@@ -34,8 +35,8 @@ class _FCStatefulState extends State<FCStateful> {
   Widget build(BuildContext context) {
     if (widget.listenables?.isEmpty ?? true) return widget.builder(context);
 
-    return ListenableBuilder(
-      listenable: Listenable.merge(
+    return StreamBuilder(
+      stream: Rx.merge(
         widget.listenables!.map((type) => context.get$(type)).toList(),
       ),
       builder: (context, _) => widget.builder(context),
