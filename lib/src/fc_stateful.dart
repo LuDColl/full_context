@@ -4,10 +4,18 @@ import 'package:full_context/src/fc_inherited.dart';
 import 'package:rxdart/rxdart.dart';
 
 class FCStateful extends StatefulWidget {
-  const FCStateful({super.key, this.listenables, required this.builder});
+  const FCStateful({
+    super.key,
+    this.listenables,
+    this.errorBuilder,
+    this.loadingBuilder,
+    required this.builder,
+  });
 
   final List<Type>? listenables;
   final Widget Function(BuildContext context) builder;
+  final Widget Function(BuildContext context)? loadingBuilder;
+  final Widget Function(BuildContext context, Object error)? errorBuilder;
 
   @override
   State<FCStateful> createState() => _FCStatefulState();
@@ -36,10 +44,23 @@ class _FCStatefulState extends State<FCStateful> {
     if (widget.listenables?.isEmpty ?? true) return widget.builder(context);
 
     return StreamBuilder(
-      stream: Rx.merge(
+      stream: Rx.combineLatest(
         widget.listenables!.map((type) => context.get$(type)).toList(),
+        (values) => values,
       ),
-      builder: (context, _) => widget.builder(context),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          if (widget.errorBuilder == null) return const SizedBox.shrink();
+          return widget.errorBuilder!(context, snapshot.error!);
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          if (widget.loadingBuilder == null) return const SizedBox.shrink();
+          return widget.loadingBuilder!(context);
+        }
+
+        return widget.builder(context);
+      },
     );
   }
 }

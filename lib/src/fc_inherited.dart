@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:full_context/src/fc_model.dart';
 import 'package:rxdart/rxdart.dart';
 
 class FCInherited extends InheritedWidget {
@@ -8,7 +7,7 @@ class FCInherited extends InheritedWidget {
     required super.child,
     required List<Function> factories,
     required Map<String, Function> parentFactories,
-    required Map<String, BehaviorSubject<FCModel>> parentSubjects,
+    required Map<String, BehaviorSubject> parentSubjects,
   }) {
     _parentSubjects = parentSubjects;
     _parentFactories = parentFactories;
@@ -20,10 +19,11 @@ class FCInherited extends InheritedWidget {
 
   final Map<String, Function> _factories = {};
   late final Map<String, Function> _parentFactories;
-  final Map<String, BehaviorSubject<FCModel>> _subjects = {};
-  late final Map<String, BehaviorSubject<FCModel>> _parentSubjects;
+  final Map<String, BehaviorSubject> _subjects = {};
 
-  Map<String, BehaviorSubject<FCModel>> get allValues => {
+  late final Map<String, BehaviorSubject> _parentSubjects;
+
+  Map<String, BehaviorSubject> get allValues => {
     ..._parentSubjects,
     ..._subjects,
   };
@@ -55,13 +55,15 @@ class FCInherited extends InheritedWidget {
 
   T get<T>() {
     final typeString = T.toString();
-    return _get<T>(typeString);
+    final value = _get<T>(typeString);
+    assert(value != null, 'No value found for type $T');
+    return value!;
   }
 
   void emit<T>(T state) {
     final typeString = T.toString();
     final subject = _get$<T>(typeString);
-    subject.add(FCModel(value: state, loading: false));
+    subject.add(MapEntry(true, state));
   }
 
   Stream<T> get$<T>([Type? type]) {
@@ -70,9 +72,9 @@ class FCInherited extends InheritedWidget {
     return subject.map((event) => event.value as T);
   }
 
-  T _get<T>(String typeString) {
+  T? _get<T>(String typeString) {
     final subject = _get$<T>(typeString);
-    return subject.value.value as T;
+    return subject.value as T?;
   }
 
   void dispose() {
@@ -94,14 +96,13 @@ class FCInherited extends InheritedWidget {
     return result!;
   }
 
-  BehaviorSubject<FCModel> _get$<T>(String typeString) {
+  BehaviorSubject _get$<T>(String typeString) {
     final hasValue = allValues.containsKey(typeString);
     if (hasValue) return allValues[typeString]!;
 
     final futureTypeString = 'Future<$typeString>';
     final hasFutureFactory = allFactories.containsKey(futureTypeString);
-
-    // if (hasFutureFactory) return _get$Async<T>(futureTypeString);
+    if (hasFutureFactory) return _get$Async<T>(futureTypeString);
 
     final hasFactory = allFactories.containsKey(typeString);
     assert(hasFactory, 'No factory found for type $T');
@@ -109,20 +110,14 @@ class FCInherited extends InheritedWidget {
     return _get$Sync<T>(typeString);
   }
 
-  BehaviorSubject<FCModel> _get$Sync<T>(String typeString) {
+  BehaviorSubject _get$Sync<T>(String typeString) {
     final factory = allFactories[typeString]!;
     final runtimeType = factory.runtimeType;
     final runtimeTypeString = runtimeType.toString();
 
     if (runtimeTypeString.contains('()')) {
       final value = factory() as T;
-
-      final subject = BehaviorSubject<FCModel>.seeded(
-        FCModel(value: value, loading: false),
-      );
-
-      _subjects[typeString] = subject;
-      return subject;
+      return _set$Sync(typeString, value);
     }
 
     final arguments = runtimeTypeString.split('=>').first.trim();
@@ -137,13 +132,74 @@ class FCInherited extends InheritedWidget {
         .replaceAll('(', '')
         .replaceAll(')', '')
         .split(',')
-        .map((typeString) => _get(typeString.trim()))
+        .map((typeString) {
+          typeString = typeString.trim();
+          final value = _get(typeString);
+
+          assert(
+            value != null,
+            'No value found for type $typeString required by factory for $T',
+          );
+
+          return value;
+        })
         .toList();
 
     final value = Function.apply(factory, positionalArguments) as T;
+    return _set$Sync(typeString, value);
+  }
 
-    final subject = BehaviorSubject<FCModel>.seeded(
-      FCModel(value: value, loading: false),
+  BehaviorSubject _set$Sync<T>(String typeString, T value) {
+    final subject = BehaviorSubject.seeded(value);
+    _subjects[typeString] = subject;
+    return subject;
+  }
+
+  BehaviorSubject _get$Async<T>(String typeString) {
+    final factory = allFactories[typeString]!;
+    final runtimeType = factory.runtimeType;
+    final runtimeTypeString = runtimeType.toString();
+
+    if (runtimeTypeString.contains('()')) {
+      final future = factory() as Future<T>;
+      return _set$Async<T>(typeString, future);
+    }
+
+    final arguments = runtimeTypeString.split('=>').first.trim();
+
+    if (arguments.contains('})')) {
+      throw UnimplementedError(
+        'Factories with named parameters are not supported yet',
+      );
+    }
+
+    final positionalArguments = arguments
+        .replaceAll('(', '')
+        .replaceAll(')', '')
+        .split(',')
+        .map((typeString) {
+          typeString = typeString.trim();
+          final value = _get(typeString);
+
+          assert(
+            value != null,
+            'No value found for type $typeString required by factory for $T',
+          );
+
+          return value;
+        })
+        .toList();
+
+    final future = Function.apply(factory, positionalArguments) as Future<T>;
+    return _set$Async<T>(typeString, future);
+  }
+
+  BehaviorSubject _set$Async<T>(String typeString, Future<T> future) {
+    final subject = BehaviorSubject<T>();
+
+    future.then(
+      (value) => subject.add(value),
+      onError: (error) => subject.addError(error),
     );
 
     _subjects[typeString] = subject;
