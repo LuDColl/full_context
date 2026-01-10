@@ -44,9 +44,8 @@ class _FCStatefulState extends State<FCStateful> {
     if (widget.listenables?.isEmpty ?? true) return widget.builder(context);
 
     return StreamBuilder(
-      stream: Rx.combineLatest(
+      stream: Rx.combineLatestList(
         widget.listenables!.map((type) => context.get$(type)).toList(),
-        (values) => values,
       ),
       builder: (context, snapshot) {
         if (snapshot.hasError) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -20,6 +22,7 @@ class FCInherited extends InheritedWidget {
   final Map<String, Function> _factories = {};
   late final Map<String, Function> _parentFactories;
   final Map<String, BehaviorSubject> _subjects = {};
+  final Map<String, StreamSubscription> _subscriptions = {};
 
   late final Map<String, BehaviorSubject> _parentSubjects;
 
@@ -52,10 +55,7 @@ class FCInherited extends InheritedWidget {
     final returnType = typeString.split('=>').last.trim();
 
     if (returnType.startsWith('Future<')) {
-      final innerType = returnType
-          .replaceAll('Future<', '')
-          .replaceAll('>', '');
-
+      final innerType = returnType.substring(7, returnType.length - 1);
       _factories[innerType] = factory;
       return;
     }
@@ -102,11 +102,16 @@ class FCInherited extends InheritedWidget {
   }
 
   BehaviorSubject _get$<T>(String typeString) {
+    _factory$<T>(typeString);
+    return allSubjects[typeString]!;
+  }
+
+  void _factory$<T>(String typeString) {
     final hasSubject = allSubjects.containsKey(typeString);
-    if (hasSubject) return allSubjects[typeString]!;
+    if (hasSubject) return;
 
     final hasFactory = allFactories.containsKey(typeString);
-    assert(hasFactory, 'No factory found for type $T');
+    assert(hasFactory, 'No factory found for type $typeString');
 
     final factory = allFactories[typeString]!;
     final runtimeType = factory.runtimeType;
@@ -114,7 +119,17 @@ class FCInherited extends InheritedWidget {
 
     if (runtimeTypeString.contains('()')) {
       final value = factory();
-      return _set$(typeString, value);
+
+      if (value is! Future<T>) {
+        final subject = BehaviorSubject<T>.seeded(value);
+        _subjects[typeString] = subject;
+        return;
+      }
+
+      final subject = BehaviorSubject<T>();
+      value.then(subject.add, onError: subject.addError);
+      _subjects[typeString] = subject;
+      return;
     }
 
     final arguments = runtimeTypeString.split('=>').first.trim();
@@ -132,49 +147,37 @@ class FCInherited extends InheritedWidget {
         .map((arg) => _get$(arg.trim()))
         .toList();
 
-    final subjectsWithOutValues = subjects
-        .where((subject) => !subject.hasValue)
+    final positionalArguments = subjects
+        .map((subject) => subject.valueOrNull)
         .toList();
 
-    if (subjectsWithOutValues.isEmpty) {
-      final value = _set<T>(factory, typeString, subjects);
-      return _set$(typeString, value);
+    final waiting = subjects.any((subject) => !subject.hasValue);
+    late final BehaviorSubject<T> subject;
+
+    if (waiting) {
+      subject = BehaviorSubject<T>();
+    } else {
+      final value = Function.apply(factory, positionalArguments);
+
+      if (value is! Future<T>) {
+        subject = BehaviorSubject<T>.seeded(value);
+      } else {
+        subject = BehaviorSubject<T>();
+        value.then(subject.add, onError: subject.addError);
+      }
     }
-
-    final subject = BehaviorSubject<T>();
-    final stream = Rx.combineLatestList(subjectsWithOutValues);
-
-    stream.first.then((_) {
-      final value = _set<T>(factory, typeString, subjects);
-      subject.add(value);
-    });
 
     _subjects[typeString] = subject;
-    return subject;
-  }
+    final streams = Rx.combineLatestList(subjects);
 
-  T _set<T>(
-    Function factory,
-    String typeString,
-    List<BehaviorSubject> subjects,
-  ) {
-    final positionalArguments = subjects
-        .map((subject) => subject.value)
-        .toList();
+    _subscriptions[typeString] = streams.listen((args) {
+      final value = Function.apply(factory, positionalArguments);
 
-    final value = Function.apply(factory, positionalArguments);
-    return value as T;
-  }
-
-  BehaviorSubject _set$<T>(String typeString, T value) {
-    if (value is! Future<T>) {
-      final subject = BehaviorSubject<T>.seeded(value);
-      _subjects[typeString] = subject;
-      return subject;
-    }
-
-    final subject = BehaviorSubject<T>();
-    value.then(subject.add, onError: subject.addError);
-    return subject;
+      if (value is! Future<T>) {
+        subject.add(value);
+      } else {
+        value.then(subject.add, onError: subject.addError);
+      }
+    });
   }
 }
