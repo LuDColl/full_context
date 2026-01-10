@@ -23,7 +23,7 @@ class FCInherited extends InheritedWidget {
 
   late final Map<String, BehaviorSubject> _parentSubjects;
 
-  Map<String, BehaviorSubject> get allValues => {
+  Map<String, BehaviorSubject> get allSubjects => {
     ..._parentSubjects,
     ..._subjects,
   };
@@ -50,30 +50,36 @@ class FCInherited extends InheritedWidget {
     assert(!returnDynamic, 'Factory must not return dynamic');
 
     final returnType = typeString.split('=>').last.trim();
+
+    if (returnType.startsWith('Future<')) {
+      final innerType = returnType
+          .replaceAll('Future<', '')
+          .replaceAll('>', '');
+
+      _factories[innerType] = factory;
+      return;
+    }
+
     _factories[returnType] = factory;
   }
 
   T get<T>() {
     final typeString = T.toString();
-    return _get<T>(typeString);
+    final subject = _get$<T>(typeString);
+    assert(subject.hasValue, 'No value found for type $T');
+    return subject.value as T;
   }
 
   void emit<T>(T state) {
     final typeString = T.toString();
     final subject = _get$<T>(typeString);
-    subject.add(MapEntry(true, state));
+    subject.add(state);
   }
 
   Stream<T> get$<T>([Type? type]) {
     final typeString = type?.toString() ?? T.toString();
     final subject = _get$<T>(typeString);
-    return subject.map((event) => event.value as T);
-  }
-
-  T _get<T>(String typeString) {
-    final subject = _get$<T>(typeString);
-    assert(subject.hasValue, 'No value found for type $T');
-    return subject.value as T;
+    return subject as Stream<T>;
   }
 
   void dispose() {
@@ -96,27 +102,19 @@ class FCInherited extends InheritedWidget {
   }
 
   BehaviorSubject _get$<T>(String typeString) {
-    final hasValue = allValues.containsKey(typeString);
-    if (hasValue) return allValues[typeString]!;
-
-    final futureTypeString = 'Future<$typeString>';
-    final hasFutureFactory = allFactories.containsKey(futureTypeString);
-    if (hasFutureFactory) return _get$Async<T>(futureTypeString);
+    final hasSubject = allSubjects.containsKey(typeString);
+    if (hasSubject) return allSubjects[typeString]!;
 
     final hasFactory = allFactories.containsKey(typeString);
     assert(hasFactory, 'No factory found for type $T');
 
-    return _get$Sync<T>(typeString);
-  }
-
-  BehaviorSubject _get$Sync<T>(String typeString) {
     final factory = allFactories[typeString]!;
     final runtimeType = factory.runtimeType;
     final runtimeTypeString = runtimeType.toString();
 
     if (runtimeTypeString.contains('()')) {
-      final value = factory() as T;
-      return _set$Sync(typeString, value);
+      final value = factory();
+      return _set$(typeString, value);
     }
 
     final arguments = runtimeTypeString.split('=>').first.trim();
@@ -127,81 +125,56 @@ class FCInherited extends InheritedWidget {
       );
     }
 
-    final positionalArguments = arguments
+    final subjects = arguments
         .replaceAll('(', '')
         .replaceAll(')', '')
         .split(',')
-        .map((typeString) {
-          typeString = typeString.trim();
-          final value = _get(typeString);
-
-          assert(
-            value != null,
-            'No value found for type $typeString required by factory for $T',
-          );
-
-          return value;
-        })
+        .map((arg) => _get$(arg.trim()))
         .toList();
 
-    final value = Function.apply(factory, positionalArguments) as T;
-    return _set$Sync(typeString, value);
-  }
+    final subjectsWithOutValues = subjects
+        .where((subject) => !subject.hasValue)
+        .toList();
 
-  BehaviorSubject _set$Sync<T>(String typeString, T value) {
-    final subject = BehaviorSubject.seeded(value);
+    if (subjectsWithOutValues.isEmpty) {
+      final value = _set<T>(factory, typeString, subjects);
+      return _set$(typeString, value);
+    }
+
+    final subject = BehaviorSubject<T>();
+    final stream = Rx.combineLatestList(subjectsWithOutValues);
+
+    stream.first.then((_) {
+      final value = _set<T>(factory, typeString, subjects);
+      subject.add(value);
+    });
+
     _subjects[typeString] = subject;
     return subject;
   }
 
-  BehaviorSubject _get$Async<T>(String typeString) {
-    final factory = allFactories[typeString]!;
-    final runtimeType = factory.runtimeType;
-    final runtimeTypeString = runtimeType.toString();
-
-    if (runtimeTypeString.contains('()')) {
-      final future = factory() as Future<T>;
-      return _set$Async<T>(typeString, future);
-    }
-
-    final arguments = runtimeTypeString.split('=>').first.trim();
-
-    if (arguments.contains('})')) {
-      throw UnimplementedError(
-        'Factories with named parameters are not supported yet',
-      );
-    }
-
-    final positionalArguments = arguments
-        .replaceAll('(', '')
-        .replaceAll(')', '')
-        .split(',')
-        .map((typeString) {
-          typeString = typeString.trim();
-          final value = _get(typeString);
-
-          assert(
-            value != null,
-            'No value found for type $typeString required by factory for $T',
-          );
-
-          return value;
-        })
+  T _set<T>(
+    Function factory,
+    String typeString,
+    List<BehaviorSubject> subjects,
+  ) {
+    final positionalArguments = subjects
+        .map((subject) => subject.value)
         .toList();
 
-    final future = Function.apply(factory, positionalArguments) as Future<T>;
-    return _set$Async<T>(typeString, future);
+    final value = Function.apply(factory, positionalArguments);
+    return value as T;
   }
 
-  BehaviorSubject _set$Async<T>(String typeString, Future<T> future) {
+  BehaviorSubject _set$<T>(String typeString, T value) {
+    if (value is! Future<T>) {
+      final subject = BehaviorSubject<T>.seeded(value);
+      _subjects[typeString] = subject;
+      return subject;
+    }
+
     final subject = BehaviorSubject<T>();
-
-    future.then(
-      (value) => subject.add(value),
-      onError: (error) => subject.addError(error),
-    );
-
-    _subjects[typeString] = subject;
+    value.then(subject.add, onError: subject.addError);
     return subject;
   }
 }
