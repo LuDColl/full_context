@@ -55,9 +55,7 @@ class FCInherited extends InheritedWidget {
 
   T get<T>() {
     final typeString = T.toString();
-    final value = _get<T>(typeString);
-    assert(value != null, 'No value found for type $T');
-    return value!;
+    return _get<T>(typeString);
   }
 
   void emit<T>(T state) {
@@ -72,9 +70,10 @@ class FCInherited extends InheritedWidget {
     return subject.map((event) => event.value as T);
   }
 
-  T? _get<T>(String typeString) {
+  T _get<T>(String typeString) {
     final subject = _get$<T>(typeString);
-    return subject.value as T?;
+    assert(subject.hasValue, 'No value found for type $T');
+    return subject.value as T;
   }
 
   void dispose() {
