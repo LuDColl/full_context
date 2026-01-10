@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 class FCInherited extends InheritedWidget {
@@ -18,18 +17,14 @@ class FCInherited extends InheritedWidget {
   }
 
   final Map<String, Function> _factories = {};
+  final Map<String, ValueNotifier> _values = {};
   late final Map<String, Function> _parentFactories;
-  final Map<String, ValueNotifier<dynamic>> _values = {};
-  late final Map<String, ValueNotifier<dynamic>> _parentValues;
+  late final Map<String, ValueNotifier> _parentValues;
+  Map<String, ValueNotifier> get allValues => {..._parentValues, ..._values};
 
   Map<String, Function> get allFactories => {
     ..._parentFactories,
     ..._factories,
-  };
-
-  Map<String, ValueNotifier<dynamic>> get allValues => {
-    ..._parentValues,
-    ..._values,
   };
 
   @override
@@ -63,8 +58,8 @@ class FCInherited extends InheritedWidget {
     listenable.value = state;
   }
 
-  ValueListenable<T> get$<T>() {
-    final typeString = T.toString();
+  ValueNotifier get$<T>([Type? type]) {
+    final typeString = type?.toString() ?? T.toString();
     return _get$<T>(typeString);
   }
 
@@ -73,9 +68,9 @@ class FCInherited extends InheritedWidget {
     return listenable.value;
   }
 
-  ValueNotifier<T> _get$<T>(String typeString) {
+  ValueNotifier _get$<T>(String typeString) {
     final hasValue = allValues.containsKey(typeString);
-    if (hasValue) return allValues[typeString]! as ValueNotifier<T>;
+    if (hasValue) return allValues[typeString]!;
 
     final hasFactory = allFactories.containsKey(typeString);
     assert(hasFactory, 'No factory found for type $T');

@@ -2,16 +2,17 @@ import 'package:flutter/widgets.dart';
 import 'package:full_context/full_context.dart';
 import 'package:full_context/src/fc_inherited.dart';
 
-class FCStateful<T> extends StatefulWidget {
-  const FCStateful({super.key, required this.builder});
+class FCStateful extends StatefulWidget {
+  const FCStateful({super.key, this.listenables, required this.builder});
 
-  final Widget Function(BuildContext context, T value) builder;
+  final List<Type>? listenables;
+  final Widget Function(BuildContext context) builder;
 
   @override
-  State<FCStateful<T>> createState() => _FCStatefulState<T>();
+  State<FCStateful> createState() => _FCStatefulState();
 }
 
-class _FCStatefulState<T> extends State<FCStateful<T>> {
+class _FCStatefulState extends State<FCStateful> {
   late final FCInherited _fcInherited;
 
   @override
@@ -31,11 +32,13 @@ class _FCStatefulState<T> extends State<FCStateful<T>> {
 
   @override
   Widget build(BuildContext context) {
-    if (T.toString() == 'Object?') return widget.builder(context, null as T);
+    if (widget.listenables?.isEmpty ?? true) return widget.builder(context);
 
-    return ValueListenableBuilder(
-      valueListenable: context.get$<T>(),
-      builder: (context, value, _) => widget.builder(context, value),
+    return ListenableBuilder(
+      listenable: Listenable.merge(
+        widget.listenables!.map((type) => context.get$(type)).toList(),
+      ),
+      builder: (context, _) => widget.builder(context),
     );
   }
 }
