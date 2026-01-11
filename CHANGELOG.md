@@ -1,3 +1,9 @@
+## 1.0.3
+
+* Add example.
+* Resolve async dependences.
+* Fix subject manipulation after being closed.
+
 ## 1.0.2
 
 * Improves Dart compatibility.

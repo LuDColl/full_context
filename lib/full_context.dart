@@ -7,9 +7,9 @@ part 'src/fc_inherited.dart';
 part 'src/fc_build_context.dart';
 
 /// A widget that provides a full context management system.
-/// 
+///
 /// ### Getting started
-/// 
+///
 /// ```dart
 /// FullContext(
 ///   listenables: [String],
@@ -30,7 +30,6 @@ part 'src/fc_build_context.dart';
 /// );
 /// ```
 class FullContext extends StatelessWidget {
-
   /// Creates a FullContext widget:
   /// - required [builder] is the widget builder.
   /// - [listenables] is a list of types to listen to.
@@ -47,7 +46,7 @@ class FullContext extends StatelessWidget {
   });
 
   /// The list of types to listen to.
-  /// 
+  ///
   /// If null or empty, no listening is performed.
   /// ```dart
   /// FullContext(
@@ -93,15 +92,17 @@ class FullContext extends StatelessWidget {
   final Widget Function(BuildContext context, Object error)? errorBuilder;
 
   @override
-  Widget build(BuildContext context) => _FCInherited(
-    factories: factories ?? [],
-    parentSubjects: _FCInherited.maybeOf(context)?.allSubjects ?? {},
-    parentFactories: _FCInherited.maybeOf(context)?.allFactories ?? {},
-    child: _FCStateful(
-      builder: builder,
-      listenables: listenables,
-      errorBuilder: errorBuilder,
-      loadingBuilder: loadingBuilder,
-    ),
-  );
+  Widget build(BuildContext context) {
+    return _FCInherited(
+      factories: factories ?? [],
+      parentSubjects: _FCInherited.maybeOf(context)?.allSubjects ?? {},
+      parentFactories: _FCInherited.maybeOf(context)?.allFactories ?? {},
+      child: _FCStateful(
+        builder: builder,
+        listenables: listenables,
+        errorBuilder: errorBuilder,
+        loadingBuilder: loadingBuilder,
+      ),
+    );
+  }
 }

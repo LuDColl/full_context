@@ -23,14 +23,14 @@ class _FCInherited extends InheritedWidget {
   late final Map<String, BehaviorSubject> _parentSubjects;
 
   Map<String, BehaviorSubject> get allSubjects => {
-    ..._parentSubjects,
-    ..._subjects,
-  };
+        ..._parentSubjects,
+        ..._subjects,
+      };
 
   Map<String, Function> get allFactories => {
-    ..._parentFactories,
-    ..._factories,
-  };
+        ..._parentFactories,
+        ..._factories,
+      };
 
   @override
   bool updateShouldNotify(_) => false;
@@ -79,12 +79,17 @@ class _FCInherited extends InheritedWidget {
   }
 
   void dispose() {
+    for (final value in _subscriptions.values) {
+      value.cancel();
+    }
+
     for (final value in _subjects.values) {
       value.close();
     }
 
     _subjects.clear();
     _factories.clear();
+    _subscriptions.clear();
   }
 
   static _FCInherited? maybeOf(BuildContext context) {
@@ -123,7 +128,18 @@ class _FCInherited extends InheritedWidget {
       }
 
       final subject = BehaviorSubject<T>();
-      value.then(subject.add, onError: subject.addError);
+
+      value.then(
+        (value) {
+          if (subject.isClosed) return;
+          subject.add(value);
+        },
+        onError: (error) {
+          if (subject.isClosed) return;
+          subject.addError(error);
+        },
+      );
+
       _subjects[typeString] = subject;
       return;
     }
@@ -143,9 +159,8 @@ class _FCInherited extends InheritedWidget {
         .map((arg) => _get$(arg.trim()))
         .toList();
 
-    final positionalArguments = subjects
-        .map((subject) => subject.valueOrNull)
-        .toList();
+    final positionalArguments =
+        subjects.map((subject) => subject.valueOrNull).toList();
 
     final waiting = subjects.any((subject) => !subject.hasValue);
     late final BehaviorSubject<T> subject;
@@ -159,20 +174,41 @@ class _FCInherited extends InheritedWidget {
         subject = BehaviorSubject<T>.seeded(value);
       } else {
         subject = BehaviorSubject<T>();
-        value.then(subject.add, onError: subject.addError);
+
+        value.then(
+          (value) {
+            if (subject.isClosed) return;
+            subject.add(value);
+          },
+          onError: (error) {
+            if (subject.isClosed) return;
+            subject.addError(error);
+          },
+        );
       }
     }
 
     _subjects[typeString] = subject;
     final streams = Rx.combineLatestList(subjects);
 
-    _subscriptions[typeString] = streams.listen((args) {
+    _subscriptions[typeString] = streams.listen((positionalArguments) {
+      if (subject.isClosed) return;
+
       final value = Function.apply(factory, positionalArguments);
 
       if (value is! Future<T>) {
         subject.add(value);
       } else {
-        value.then(subject.add, onError: subject.addError);
+        value.then(
+          (value) {
+            if (subject.isClosed) return;
+            subject.add(value);
+          },
+          onError: (error) {
+            if (subject.isClosed) return;
+            subject.addError(error);
+          },
+        );
       }
     });
   }
