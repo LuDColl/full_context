@@ -206,18 +206,16 @@ class Home extends StatelessWidget {
 
           return InkWell(
             onTap: () => controller.insert(context),
-            child: Center(
-              child: ListView.separated(
-                itemCount: entities.length,
-                separatorBuilder: (context, index) => const Divider(),
-                itemBuilder: (context, index) {
-                  final entity = entities[index];
-                  return ListTile(
-                    title: Text('ID: ${entity.id}'),
-                    subtitle: Text('Name: ${entity.name}'),
-                  );
-                },
-              ),
+            child: ListView.separated(
+              itemCount: entities.length,
+              separatorBuilder: (context, index) => const Divider(),
+              itemBuilder: (context, index) {
+                final entity = entities[index];
+                return ListTile(
+                  title: Text('ID: ${entity.id}'),
+                  subtitle: Text('Name: ${entity.name}'),
+                );
+              },
             ),
           );
         },
