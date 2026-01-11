@@ -1,6 +1,6 @@
 name: full_context
 description: "Intuitive state management via Context. With FullContext you still need Providers and Builders to instantiate and display states, but management can all be done through Context"
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/LuDColl/full_context
 
 environment:
@@ -16,7 +16,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
 
+  flutter_lints: ^6.0.0
 
 flutter:

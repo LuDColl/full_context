@@ -1,11 +1,7 @@
-import 'package:flutter/widgets.dart';
-import 'package:full_context/full_context.dart';
-import 'package:full_context/src/fc_inherited.dart';
-import 'package:rxdart/rxdart.dart';
+part of '../full_context.dart';
 
-class FCStateful extends StatefulWidget {
-  const FCStateful({
-    super.key,
+class _FCStateful extends StatefulWidget {
+  const _FCStateful({
     this.listenables,
     this.errorBuilder,
     this.loadingBuilder,
@@ -18,18 +14,18 @@ class FCStateful extends StatefulWidget {
   final Widget Function(BuildContext context, Object error)? errorBuilder;
 
   @override
-  State<FCStateful> createState() => _FCStatefulState();
+  State<_FCStateful> createState() => _FCStatefulState();
 }
 
-class _FCStatefulState extends State<FCStateful> {
-  late final FCInherited _fcInherited;
+class _FCStatefulState extends State<_FCStateful> {
+  late final _FCInherited _fcInherited;
 
   @override
   void initState() {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _fcInherited = FCInherited.of(context),
+      (_) => _fcInherited = _FCInherited.of(context),
     );
   }
 

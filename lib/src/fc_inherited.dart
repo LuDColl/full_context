@@ -1,11 +1,7 @@
-import 'dart:async';
+part of '../full_context.dart';
 
-import 'package:flutter/widgets.dart';
-import 'package:rxdart/rxdart.dart';
-
-class FCInherited extends InheritedWidget {
-  FCInherited({
-    super.key,
+class _FCInherited extends InheritedWidget {
+  _FCInherited({
     required super.child,
     required List<Function> factories,
     required Map<String, Function> parentFactories,
@@ -91,12 +87,12 @@ class FCInherited extends InheritedWidget {
     _factories.clear();
   }
 
-  static FCInherited? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<FCInherited>();
+  static _FCInherited? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_FCInherited>();
   }
 
-  static FCInherited of(BuildContext context) {
-    final FCInherited? result = maybeOf(context);
+  static _FCInherited of(BuildContext context) {
+    final _FCInherited? result = maybeOf(context);
     assert(result != null, 'No FCInherited found in context');
     return result!;
   }

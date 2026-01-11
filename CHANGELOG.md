@@ -1,8 +1,17 @@
+## 1.0.1
+
+* Provide documentation.
+* Export only public code.
+
+## 1.0.0
+
+* Refactor the entire package.
+
 ## 0.5.0
 
-* Remove Events;
-* Remove Maps;
 * Add FCInit.
+* Remove Maps.
+* Remove Events.
 
 ## 0.4.2
 
@@ -14,8 +23,8 @@
 
 ## 0.4.0
 
-* Add Errors Handlers in Builder, Listener and Consumer;
 * Add Null Handlers in Builder and Consumer.
+* Add Errors Handlers in Builder, Listener and Consumer.
 
 ## 0.3.1
 
@@ -23,26 +32,26 @@
 
 ## 0.3.0
 
-* Modify FullContext:
-  * Add After Init;
-  * Add Child.
 * Merge Widgets with InitWidgets.
+* Modify FullContext:
+  * Add After Init.
+  * Add Child.
 
 ## 0.2.1
 
-* Export Init Widgets;
 * Invert Changelog.
+* Export Init Widgets.
 
 ## 0.2.0
 
-* Add Init Widgets;
 * Export Events.
+* Add Init Widgets.
 
 ## 0.1.0
 
-* Remove FCBuildStream;
-* Change FCBuilder to FCBuildStream;
 * Add Events.
+* Remove FCBuildStream.
+* Change FCBuilder to FCBuildStream.
 
 ## 0.0.2
 
