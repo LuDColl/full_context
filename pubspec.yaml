@@ -1,10 +1,10 @@
 name: full_context
 description: "Intuitive state management via Context. With FullContext you still need Providers and Builders to instantiate and display states, but management can all be done through Context"
-version: 1.0.1
+version: 1.0.2
 homepage: https://github.com/LuDColl/full_context
 
 environment:
-  sdk: '>=3.10.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
   flutter: ">=1.17.0"
 
 dependencies:

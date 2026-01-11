@@ -1,3 +1,7 @@
+## 1.0.2
+
+* Improves Dart compatibility.
+
 ## 1.0.1
 
 * Provide documentation.
