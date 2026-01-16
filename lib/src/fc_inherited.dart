@@ -1,63 +1,21 @@
 part of '../full_context.dart';
 
 class _FCInherited extends InheritedWidget {
-  _FCInherited({
+  const _FCInherited({
+    required this.parent,
     required super.child,
-    required List<Function> factories,
-    required Map<String, Function> parentFactories,
-    required Map<String, BehaviorSubject> parentSubjects,
-  }) {
-    _parentSubjects = parentSubjects;
-    _parentFactories = parentFactories;
+    required this.subjects,
+    required this.factories,
+    required this.subscriptions,
+  });
 
-    for (final factory in factories) {
-      add(factory);
-    }
-  }
-
-  final Map<String, Function> _factories = {};
-  late final Map<String, Function> _parentFactories;
-  final Map<String, BehaviorSubject> _subjects = {};
-  final Map<String, StreamSubscription> _subscriptions = {};
-
-  late final Map<String, BehaviorSubject> _parentSubjects;
-
-  Map<String, BehaviorSubject> get allSubjects => {
-        ..._parentSubjects,
-        ..._subjects,
-      };
-
-  Map<String, Function> get allFactories => {
-        ..._parentFactories,
-        ..._factories,
-      };
+  final _FCInherited? parent;
+  final Map<String, Function> factories;
+  final Map<String, BehaviorSubject> subjects;
+  final Map<String, StreamSubscription> subscriptions;
 
   @override
-  bool updateShouldNotify(_) => false;
-
-  void add(Function factory) {
-    final runtimeType = factory.runtimeType;
-    final typeString = runtimeType.toString();
-
-    final hasReturn = typeString.contains('=>');
-    assert(hasReturn, 'Factory must have a return type');
-
-    final returnVoid = typeString.contains('=> void');
-    assert(!returnVoid, 'Factory must not return void');
-
-    final returnDynamic = typeString.contains('=> dynamic');
-    assert(!returnDynamic, 'Factory must not return dynamic');
-
-    final returnType = typeString.split('=>').last.trim();
-
-    if (returnType.startsWith('Future<')) {
-      final innerType = returnType.substring(7, returnType.length - 1);
-      _factories[innerType] = factory;
-      return;
-    }
-
-    _factories[returnType] = factory;
-  }
+  bool updateShouldNotify(_FCInherited oldWidget) => false;
 
   T get<T>() {
     final typeString = T.toString();
@@ -72,24 +30,10 @@ class _FCInherited extends InheritedWidget {
     subject.add(state);
   }
 
-  Stream<T> get$<T>([Type? type]) {
-    final typeString = type?.toString() ?? T.toString();
+  Stream<T> get$<T>([String? typeString]) {
+    typeString ??= T.toString();
     final subject = _get$<T>(typeString);
     return subject as Stream<T>;
-  }
-
-  void dispose() {
-    for (final value in _subscriptions.values) {
-      value.cancel();
-    }
-
-    for (final value in _subjects.values) {
-      value.close();
-    }
-
-    _subjects.clear();
-    _factories.clear();
-    _subscriptions.clear();
   }
 
   static _FCInherited? maybeOf(BuildContext context) {
@@ -104,17 +48,22 @@ class _FCInherited extends InheritedWidget {
 
   BehaviorSubject _get$<T>(String typeString) {
     _factory$<T>(typeString);
-    return allSubjects[typeString]!;
+    return subjects[typeString] ?? parent!.subjects[typeString]!;
   }
 
   void _factory$<T>(String typeString) {
-    final hasSubject = allSubjects.containsKey(typeString);
+    final hasSubject = this.subjects.containsKey(typeString);
     if (hasSubject) return;
 
-    final hasFactory = allFactories.containsKey(typeString);
-    assert(hasFactory, 'No factory found for type $typeString');
+    final hasFactory = factories.containsKey(typeString);
 
-    final factory = allFactories[typeString]!;
+    if (!hasFactory) {
+      final hasParent = parent != null;
+      assert(hasParent, 'No factory found for type $typeString');
+      return parent!._factory$<T>(typeString);
+    }
+
+    final factory = factories[typeString]!;
     final runtimeType = factory.runtimeType;
     final runtimeTypeString = runtimeType.toString();
 
@@ -123,7 +72,7 @@ class _FCInherited extends InheritedWidget {
 
       if (value is! Future<T>) {
         final subject = BehaviorSubject<T>.seeded(value);
-        _subjects[typeString] = subject;
+        this.subjects[typeString] = subject;
         return;
       }
 
@@ -140,7 +89,7 @@ class _FCInherited extends InheritedWidget {
         },
       );
 
-      _subjects[typeString] = subject;
+      this.subjects[typeString] = subject;
       return;
     }
 
@@ -156,8 +105,7 @@ class _FCInherited extends InheritedWidget {
         .replaceAll('(', '')
         .replaceAll(')', '')
         .split(',')
-        .map((arg) => _get$(arg.trim()))
-        .toList();
+        .map((arg) => _get$(arg.trim()));
 
     final positionalArguments =
         subjects.map((subject) => subject.valueOrNull).toList();
@@ -188,10 +136,10 @@ class _FCInherited extends InheritedWidget {
       }
     }
 
-    _subjects[typeString] = subject;
-    final streams = Rx.combineLatestList(subjects);
+    this.subjects[typeString] = subject;
+    final streams = CombineLatestStream.list(subjects);
 
-    _subscriptions[typeString] = streams.listen((positionalArguments) {
+    subscriptions[typeString] = streams.listen((positionalArguments) {
       if (subject.isClosed) return;
 
       final value = Function.apply(factory, positionalArguments);

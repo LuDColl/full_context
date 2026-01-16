@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/widgets.dart';
 
-part 'src/fc_stateful.dart';
 part 'src/fc_inherited.dart';
 part 'src/fc_build_context.dart';
 
@@ -29,7 +28,7 @@ part 'src/fc_build_context.dart';
 ///  ),
 /// );
 /// ```
-class FullContext extends StatelessWidget {
+class FullContext extends StatefulWidget {
   /// Creates a FullContext widget:
   /// - required [builder] is the widget builder.
   /// - [listenables] is a list of types to listen to.
@@ -92,17 +91,100 @@ class FullContext extends StatelessWidget {
   final Widget Function(BuildContext context, Object error)? errorBuilder;
 
   @override
+  State<FullContext> createState() => _FullContextState();
+}
+
+class _FullContextState extends State<FullContext> {
+  final Map<String, Function> factories = {};
+  final Map<String, BehaviorSubject> subjects = {};
+  final Map<String, StreamSubscription> subscriptions = {};
+
+  @override
+  void initState() {
+    super.initState();
+    final factories = widget.factories;
+    if (factories == null) return;
+
+    if (factories.isEmpty) return;
+
+    for (final factory in factories) {
+      final runtimeType = factory.runtimeType;
+      final typeString = runtimeType.toString();
+
+      final hasReturn = typeString.contains('=>');
+      assert(hasReturn, 'Factory must have a return type');
+
+      final returnVoid = typeString.contains('=> void');
+      assert(!returnVoid, 'Factory must not return void');
+
+      final returnDynamic = typeString.contains('=> dynamic');
+      assert(!returnDynamic, 'Factory must not return dynamic');
+
+      final returnType = typeString.split('=>').last.trim();
+
+      if (returnType.startsWith('Future<')) {
+        final innerType = returnType.substring(7, returnType.length - 1);
+        this.factories[innerType] = factory;
+        continue;
+      }
+
+      this.factories[returnType] = factory;
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final subscription in subscriptions.values) {
+      subscription.cancel();
+    }
+
+    for (final subject in subjects.values) {
+      subject.close();
+    }
+
+    subjects.clear();
+    factories.clear();
+    subscriptions.clear();
+
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final parent = _FCInherited.maybeOf(context);
+
     return _FCInherited(
-      factories: factories ?? [],
-      parentSubjects: _FCInherited.maybeOf(context)?.allSubjects ?? {},
-      parentFactories: _FCInherited.maybeOf(context)?.allFactories ?? {},
-      child: _FCStateful(
-        builder: builder,
-        listenables: listenables,
-        errorBuilder: errorBuilder,
-        loadingBuilder: loadingBuilder,
-      ),
+      parent: parent,
+      subjects: subjects,
+      factories: factories,
+      subscriptions: subscriptions,
+      child: Builder(builder: (context) {
+        final listenables = widget.listenables;
+
+        if (listenables == null) return widget.builder(context);
+
+        if (listenables.isEmpty) return widget.builder(context);
+
+        final streams = listenables.map((type) => context.get$('$type'));
+        final stream = CombineLatestStream.list(streams);
+
+        return StreamBuilder(
+          stream: stream,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              if (widget.errorBuilder == null) return const SizedBox.shrink();
+              return widget.errorBuilder!(context, snapshot.error!);
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              if (widget.loadingBuilder == null) return const SizedBox.shrink();
+              return widget.loadingBuilder!(context);
+            }
+
+            return widget.builder(context);
+          },
+        );
+      }),
     );
   }
 }
