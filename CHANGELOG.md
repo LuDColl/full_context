@@ -1,3 +1,8 @@
+## 1.1.0
+
+* Resolve Listenables;
+* Temporarily remove `context.add`;
+
 ## 1.0.3
 
 * Add example.
