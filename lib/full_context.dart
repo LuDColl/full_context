@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:full_context/src/fc_core.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/widgets.dart';
 
@@ -95,69 +96,29 @@ class FullContext extends StatefulWidget {
 }
 
 class _FullContextState extends State<FullContext> {
-  final Map<String, Function> factories = {};
-  final Map<String, BehaviorSubject> subjects = {};
-  final Map<String, StreamSubscription> subscriptions = {};
+  bool _init = false;
+  late final FCCore core;
 
   @override
-  void initState() {
-    super.initState();
-    final factories = widget.factories;
-    if (factories == null) return;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_init) return;
 
-    if (factories.isEmpty) return;
-
-    for (final factory in factories) {
-      final runtimeType = factory.runtimeType;
-      final typeString = runtimeType.toString();
-
-      final hasReturn = typeString.contains('=>');
-      assert(hasReturn, 'Factory must have a return type');
-
-      final returnVoid = typeString.contains('=> void');
-      assert(!returnVoid, 'Factory must not return void');
-
-      final returnDynamic = typeString.contains('=> dynamic');
-      assert(!returnDynamic, 'Factory must not return dynamic');
-
-      final returnType = typeString.split('=>').last.trim();
-
-      if (returnType.startsWith('Future<')) {
-        final innerType = returnType.substring(7, returnType.length - 1);
-        this.factories[innerType] = factory;
-        continue;
-      }
-
-      this.factories[returnType] = factory;
-    }
+    _init = true;
+    final parent = _FCInherited.maybeOf(context);
+    core = FCCore(parent: parent?.core, factories: widget.factories);
   }
 
   @override
   void dispose() {
-    for (final subscription in subscriptions.values) {
-      subscription.cancel();
-    }
-
-    for (final subject in subjects.values) {
-      subject.close();
-    }
-
-    subjects.clear();
-    factories.clear();
-    subscriptions.clear();
-
+    core.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final parent = _FCInherited.maybeOf(context);
-
     return _FCInherited(
-      parent: parent,
-      subjects: subjects,
-      factories: factories,
-      subscriptions: subscriptions,
+      core: core,
       child: Builder(builder: (context) {
         final listenables = widget.listenables;
 

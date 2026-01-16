@@ -1,3 +1,7 @@
+## 1.1.1
+
+* Add FCCore for dart only.
+
 ## 1.1.0
 
 * Resolve Listenables;
